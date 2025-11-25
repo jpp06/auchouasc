@@ -1,0 +1,44 @@
+## Langue
+- Toujours répondre en anglais
+- tutoye !
+- code en anglais
+
+## Style de code Python
+- Applique le style PEP8
+- Préférer les classes pour organiser le code
+- Utiliser des noms de variables descriptifs avec préfixes :
+  - `l_` pour les variables locales
+  - `c_` pour les variables de boucle/itération
+  - `p_` pour les paramètres de fonction
+- Garder les lignes de code courtes (< 80 caractères si possible)
+- ne pas générer de ligne qui finissent par des espaces
+- pas de TAB pour indenter
+
+## Conventions de nommage
+- Classes : PascalCase (ex: `Checker`, `Dashboards`)
+- Fonctions et variables : snake_case (ex: `check_data`, `l_grafana_url`)
+- Constantes : UPPER_CASE (ex: `GRAFANA_URL`)
+
+## Structure du projet
+- Organiser le code en modules logiques
+- Séparer les responsabilités entre les classes
+- Utiliser des imports relatifs pour les modules internes
+
+## messages de sortie
+- pour print/debug : print("---", message)
+- pour tracer : print("===", message)
+
+## Gestion des erreurs
+- Utiliser `sys.exit(1)` pour les erreurs fatales
+- Afficher les messages d'erreur avec `print("***", message, file=sys.stderr)`
+- Utiliser des messages d'erreur clairs et informatifs
+
+## Documentation
+- Commenter le code complexe le moins possible
+- Utiliser des commentaires en anglais
+
+## Bonnes pratiques
+- Préférer la composition à l'héritage
+- Éviter les variables globales
+- Utiliser des types hints quand c'est utile
+- Gérer les ressources (fichiers, connexions) proprement

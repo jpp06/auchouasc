@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: AH Scanner
+## Notes: Scanne l'hôtel des ventes et exporte les données
+## Author: Ton Nom
+## Version: 1.0
+## SavedVariables: AHScannerDB
+
+AHScanner.lua
