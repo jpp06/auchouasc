@@ -65,9 +65,6 @@ class ObsidianGenerator:
                 l_ahs_item = c_sources.get('ahs', {}).get(p_item_id)
                 if not l_ahs_item: # keep only item with ahs data
                     continue
-
-                l_auc_price = None
-                l_tsm_price = None
                 l_ahs_price = None
                 l_ahs_min_bid_value = None
                 l_ahs_quantity = None
@@ -77,7 +74,7 @@ class ObsidianGenerator:
                     l_ahs_min_bid_value = l_ahs_item.get('m')
                     l_ahs_quantity = l_ahs_item.get('q')
 
-                if l_auc_price is not None or l_tsm_price is not None or l_ahs_price is not None:
+                if l_ahs_price is not None:
                     if l_date_str not in l_dates:
                         l_dates.append(l_date_str)
                         l_ahs_prices.append(None)
@@ -119,7 +116,7 @@ class ObsidianGenerator:
             return l_file.read()
 
     def _generate_price_chart_content(self, p_dates: List[str], p_ahs_prices: List[int], p_ahs_min_bid_values: List[int]) -> str:
-        """Generate chart content from dates, auc prices, tsm prices and tsm min buyout."""
+        """Generate chart content from dates, ahs prices and ahs min bid values."""
         l_all_prices = [p for p in p_ahs_prices + p_ahs_min_bid_values if p is not None]
         l_max_price = max(l_all_prices) if l_all_prices else 0
 
