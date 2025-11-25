@@ -4,20 +4,11 @@
 from pathlib import Path
 
 import typer
-import yaml
 
-from converters.price_db_converter import PriceDatabaseConverter
-from converters.accounting_converter import AccountingConverter
-from converters.auctiondb_converter import AuctionDBConverter
-from converters.shopping_converter import ShoppingConverter
 from converters.ahscanner_converter import AHScannerConverter
 from item_database import ItemDatabase
 from price_database import PriceDatabase
 from auction_database import AuctionDatabase
-from managers.accounting_manager import AccountingManager
-from managers.shopping_manager import ShoppingManager
-from managers.price_database_manager import PriceDatabaseManager
-from managers.auctiondb_manager import AuctionDBManager
 from managers.ahscanner_manager import AHScannerManager
 from obsidian_generator import ObsidianGenerator
 from ahscanner_obsidian_generator import AHScannerObsidianGenerator
@@ -41,47 +32,6 @@ def update_item_db(item_database_file: Path = typer.Option(Path('datas/items.yam
     l_prices_db = PriceDatabase(price_database_file)
     l_auction_database = AuctionDatabase(auction_database_file)
 
-    # Extract items from accounting.yaml and shopping.yaml files
-    l_accounting_manager = AccountingManager(dailies_directory)
-    l_items_added = l_accounting_manager.fill_database(l_items_db)
-    print(f"--- Added {l_items_added} new items from accounting files")
-    l_shopping_manager = ShoppingManager(dailies_directory)
-    l_items_added = l_shopping_manager.fill_database(l_items_db)
-    print(f"--- Added {l_items_added} new items from shopping files")
-    # Save database
-    print(f"--- Saving database: {item_database_file}")
-    l_items_db.save()
-
-    l_price_database_manager = PriceDatabaseManager(dailies_directory)
-    l_price_database_manager.load_all()
-    l_items = l_price_database_manager.get_all_prices_by_name()
-    l_items_added = 0
-    for c_realm, c_prices in l_items.items():
-        l_prices_db.add_realm(c_realm)
-        for c_timestamp, c_prices in c_prices.items():
-            l_prices_db.add_timestamp(c_realm, c_timestamp)
-            l_prices_db.add_source(c_realm, c_timestamp, 'auc')
-            for c_item_name, c_price in c_prices.items():
-                l_item_id = l_items_db.get_by_name(c_item_name)
-                if not l_item_id:
-                    print(f"=== Warning: Item '{c_item_name}' not found in items database")
-                    continue
-                l_prices_db.add_qnp(l_item_id, {"p": c_price}, c_realm, c_timestamp, "auc")
-                l_items_added += 1
-    print(f"--- Added {l_items_added} auc prices to price database")
-    l_items_added = 0
-    l_auctiondb_manager = AuctionDBManager(dailies_directory)
-    l_auctiondb_manager.load_all()
-    l_items = l_auctiondb_manager.get_all_qnp_by_name()
-    for c_realm, c_prices in l_items.items():
-        l_prices_db.add_realm(c_realm)
-        for c_timestamp, c_prices in c_prices.items():
-            l_prices_db.add_timestamp(c_realm, c_timestamp)
-            l_prices_db.add_source(c_realm, c_timestamp, 'tsm')
-            for c_item_id, c_qnp in c_prices.items():
-                l_prices_db.add_qnp(c_item_id, c_qnp, c_realm, c_timestamp, "tsm")
-                l_items_added += 1
-    print(f"--- Added {l_items_added} tsm prices to price database")
     l_items_added = 0
     l_ahscanner_manager = AHScannerManager(dailies_directory, l_items_db)
     l_ahscanner_manager.load_all()
@@ -118,10 +68,6 @@ def convert(dailies_dir: Path = typer.Argument(Path('dailies'), help="Directory 
     Convert Lua files to YAML.
 
     Scans all subdirectories in dailies_dir and converts all supported Lua files found:
-    - Auctionator_Price_Database.lua
-    - TradeSkillMaster_Accounting.lua
-    - TradeSkillMaster_AuctionDB.lua
-    - TradeSkillMaster_Shopping.lua
     - AHScanner.lua
 
     Args:
@@ -143,10 +89,6 @@ def convert(dailies_dir: Path = typer.Argument(Path('dailies'), help="Directory 
     l_output_base.mkdir(parents=True, exist_ok=True)
 
     l_files_to_convert = [
-        ('Auctionator_Price_Database.lua', PriceDatabaseConverter),
-        ('TradeSkillMaster_Accounting.lua', AccountingConverter),
-        ('TradeSkillMaster_AuctionDB.lua', AuctionDBConverter),
-        ('TradeSkillMaster_Shopping.lua', ShoppingConverter),
         ('AHScanner.lua', AHScannerConverter),
     ]
 
