@@ -1,4 +1,4 @@
-# ascensionAuctionator
+# Ascension Auction House: scans and charts
 
 Outil pour convertir et analyser les données d'enchères de World of Warcraft Classic depuis l'addon AHScanner, et générer des visualisations dans Obsidian.
 
