@@ -12,6 +12,4 @@ NOW_DIR=${SAVE_DIR}/$(date -u +"%Y_%m_%dT%H_%M_%S")
 mkdir -p ${NOW_DIR}
 
 cd "${VARS_DIR}/"
-cp Auctionator_Price_Database.lua ${NOW_DIR}
-cp TradeSkillMaster_Accounting.lua TradeSkillMaster_AuctionDB.lua TradeSkillMaster_Shopping.lua ${NOW_DIR}
 cp AHScanner.lua ${NOW_DIR}
