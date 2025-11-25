@@ -87,18 +87,19 @@ class AHScannerObsidianGenerator:
                 l_item = c_items.get(p_item_id)
                 if not l_item:
                     continue
-                l_harmonic_mean = l_item.get('buyout', {}).get('harmonic_mean')
-                l_median = l_item.get('buyout', {}).get('median')
-                l_median_groupe = l_item.get('buyout', {}).get('median_grouped')
-                l_median_low = l_item.get('buyout', {}).get('median_low')
-                l_mean = l_item.get('buyout', {}).get('mean')
-                l_min = l_item.get('buyout', {}).get('min')
-                l_max = l_item.get('buyout', {}).get('max')
-                l_p_stdev = l_item.get('buyout', {}).get('pstdev')
-                l_stdev = l_item.get('buyout', {}).get('stdev')
-                l_p_variance = l_item.get('buyout', {}).get('pvariance')
-                l_variance = l_item.get('buyout', {}).get('variance')
-                l_mustache = l_item.get('buyout', {}).get('quartiles')
+                l_buyout_filtered = l_item['buyout']['filtered']
+                l_harmonic_mean = l_buyout_filtered['harmonic_mean']
+                l_median = l_buyout_filtered['median']
+                l_median_groupe = l_buyout_filtered['median_grouped']
+                l_median_low = l_buyout_filtered['median_low']
+                l_mean = l_buyout_filtered['mean']
+                l_min = l_buyout_filtered['min']
+                l_max = l_buyout_filtered['max']
+                l_p_stdev = l_buyout_filtered['pstdev']
+                l_stdev = l_buyout_filtered['stdev']
+                l_p_variance = l_buyout_filtered['pvariance']
+                l_variance = l_buyout_filtered['variance']
+                l_mustache = l_buyout_filtered['quartiles']
                 l_dates.append(l_date_str)
                 l_harmonic_means.append(l_harmonic_mean)
                 l_medians.append(l_median)
