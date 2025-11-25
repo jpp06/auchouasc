@@ -98,22 +98,46 @@ class AHScannerConverter(LuaToYamlConverter):
                         l_counts_by_prices[c_price]["auctions_count"] = len(l_auctions)
                         l_prices += [c_price] * l_item_count
                 l_counted_data[c_item_name][c_type] = {}
+                l_counted_data[c_item_name][c_type]["filtered"] = {}
+                l_counted_data[c_item_name][c_type]["all"] = {}
+
+                l_quartiles = statistics.quantiles(l_prices, n=4)
+                l_q1 = l_quartiles[0]
+                l_q3 = l_quartiles[2]
+                l_iqr = l_q3 - l_q1
+                l_lower_fence = l_q1 - 1.5 * l_iqr
+                l_upper_fence = l_q3 + 1.5 * l_iqr
+
+                l_filtered_prices = []
+                for c_price, c_price_data in l_counts_by_prices.items():
+                    if c_price < l_lower_fence:
+                        l_counts_by_prices[c_price]["lower"] = True
+                    elif c_price > l_upper_fence:
+                        l_counts_by_prices[c_price]["upper"] = True
+                    else:
+                        l_filtered_prices += [c_price] * c_price_data.get('item_count', 0)
                 l_counted_data[c_item_name][c_type]["counts_by_prices"] = dict(l_counts_by_prices)
                 l_prices.sort()
-                l_counted_data[c_item_name][c_type]["count"] = len(l_prices)
-                l_counted_data[c_item_name][c_type]["min"] = l_prices[0]
-                l_counted_data[c_item_name][c_type]["max"] = l_prices[-1]
-                l_counted_data[c_item_name][c_type]["mean"] = statistics.mean(l_prices)
-                l_counted_data[c_item_name][c_type]["median"] = statistics.median(l_prices)
-                l_counted_data[c_item_name][c_type]["harmonic_mean"] = statistics.harmonic_mean(l_prices)
-                l_counted_data[c_item_name][c_type]["median_grouped"] = statistics.median_grouped(l_prices)
-                l_counted_data[c_item_name][c_type]["median_high"] = statistics.median_high(l_prices)
-                l_counted_data[c_item_name][c_type]["median_low"] = statistics.median_low(l_prices)
-                l_counted_data[c_item_name][c_type]["mode"] = statistics.mode(l_prices)
-                l_counted_data[c_item_name][c_type]["pstdev"] = statistics.pstdev(l_prices)
-                l_counted_data[c_item_name][c_type]["stdev"] = statistics.stdev(l_prices)
-                l_counted_data[c_item_name][c_type]["pvariance"] = statistics.pvariance(l_prices)
-                l_counted_data[c_item_name][c_type]["variance"] = statistics.variance(l_prices)
-                l_counted_data[c_item_name][c_type]["deciles"] = statistics.quantiles(l_prices, n=10)
-                l_counted_data[c_item_name][c_type]["quartiles"] = statistics.quantiles(l_prices, n=4)
+                l_filtered_prices.sort()
+
+                self._get_stats_data(l_counted_data[c_item_name][c_type]["all"], l_prices)
+                self._get_stats_data(l_counted_data[c_item_name][c_type]["filtered"], l_filtered_prices)
         return l_counted_data
+
+    def _get_stats_data(self, p_data, p_prices):
+        p_data["count"] = len(p_prices)
+        p_data["min"] = p_prices[0]
+        p_data["max"] = p_prices[-1]
+        p_data["mean"] = statistics.mean(p_prices)
+        p_data["median"] = statistics.median(p_prices)
+        p_data["harmonic_mean"] = statistics.harmonic_mean(p_prices)
+        p_data["median_grouped"] = statistics.median_grouped(p_prices)
+        p_data["median_high"] = statistics.median_high(p_prices)
+        p_data["median_low"] = statistics.median_low(p_prices)
+        p_data["mode"] = statistics.mode(p_prices)
+        p_data["pstdev"] = statistics.pstdev(p_prices)
+        p_data["stdev"] = statistics.stdev(p_prices)
+        p_data["pvariance"] = statistics.pvariance(p_prices)
+        p_data["variance"] = statistics.variance(p_prices)
+        p_data["deciles"] = statistics.quantiles(p_prices, n=10)
+        p_data["quartiles"] = statistics.quantiles(p_prices, n=4)

@@ -41,8 +41,10 @@ def update_item_db(item_database_file: Path = typer.Option(Path('datas/items.yam
         for c_timestamp, c_prices in c_prices.items():
             l_prices_db.add_timestamp(c_realm, c_timestamp)
             l_prices_db.add_source(c_realm, c_timestamp, 'ahs')
+            l_prices_db.add_source(c_realm, c_timestamp, 'ahs_all')
             for c_item_id, c_qnp in c_prices.items():
-                l_prices_db.add_qnp(c_item_id, c_qnp, c_realm, c_timestamp, "ahs")
+                l_prices_db.add_qnp(c_item_id, c_qnp["all"], c_realm, c_timestamp, "ahs_all")
+                l_prices_db.add_qnp(c_item_id, c_qnp["filtered"], c_realm, c_timestamp, "ahs")
                 l_items_added += 1
     print(f"--- Added {l_items_added} ahs prices to price database")
     l_prices_db.save()
