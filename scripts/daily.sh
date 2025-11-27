@@ -12,4 +12,7 @@ NOW_DIR=${SAVE_DIR}/$(date -u +"%Y_%m_%dT%H_%M_%S")
 mkdir -p ${NOW_DIR}
 
 cd "${VARS_DIR}/"
+
+wc -l AHScanner.lua
+ls -l AHScanner.lua
 cp AHScanner.lua ${NOW_DIR}
