@@ -21,6 +21,8 @@ local currentPage = 0
 local totalPages = 0
 local scanStartTime = 0
 local currentItemIndex = 1
+local isProcessingPage = false
+local lastProcessedPage = -1
 local itemsToScan = {"Copper Ore", "Copper Bar",
 "Tin Ore", "Tin Bar",
 "Iron Ore", "Iron Bar",
@@ -77,6 +79,8 @@ function AHScanner:StartScan()
     
     -- Initialiser le scan
     isScanning = true
+    isProcessingPage = false
+    lastProcessedPage = -1
     currentScan = {
         items = {},
         startTime = time(),
@@ -100,11 +104,18 @@ function AHScanner:StartScan()
         if isScanning and currentPage == 0 then
             Print("TIMEOUT: Aucune réponse de l'AH. Réessaie.")
             isScanning = false
+            isProcessingPage = false
         end
     end)
 end
 
 function AHScanner:ProcessPage()
+    -- Éviter les traitements multiples
+    if isProcessingPage then
+        Print("ProcessPage déjà en cours, on ignore cet événement")
+        return
+    end
+    
     local numBatchAuctions, totalAuctions = GetNumAuctionItems("list")
     
     Print(string.format("ProcessPage appelé: numBatch=%d, total=%d", numBatchAuctions, totalAuctions))
@@ -113,21 +124,34 @@ function AHScanner:ProcessPage()
     if numBatchAuctions == 0 and totalAuctions > 0 then
         Print("Données pas encore chargées " .. itemsToScan[currentItemIndex] .. " " .. currentPage, " on réessaie dans 2s...")
         C_Timer.After(2, function()
-            self:ProcessPage()
+            QueryAuctionItems(itemsToScan[currentItemIndex], nil, nil, 0, 0, 0, currentPage)
         end)
         return
     end
     
     if numBatchAuctions == 0 and totalAuctions == 0 then
         Print("ERREUR: Aucune donnée dans l'AH")
+        isProcessingPage = false
         self:FinishScan()
         return
     end
     
     if numBatchAuctions == 0 then
+        isProcessingPage = false
         self:FinishScan()
         return
     end
+    
+    -- Vérifier qu'on n'a pas déjà traité cette page
+    local l_page_key = currentItemIndex .. "_" .. currentPage
+    if lastProcessedPage == l_page_key then
+        Print("Page déjà traitée, on ignore")
+        return
+    end
+    
+    -- Marquer qu'on est en train de traiter
+    isProcessingPage = true
+    lastProcessedPage = l_page_key
 
     -- Parcourir toutes les enchères de la page
     local itemsFound = 0
@@ -169,10 +193,14 @@ function AHScanner:ProcessPage()
 
     -- Calculer le nombre total de pages
     totalPages = math.ceil(totalAuctions / 50)
+    local l_old_page = currentPage
     currentPage = currentPage + 1
     
     Print(string.format("Page %d/%d scannée pour %s (%d items au total)", 
-          currentPage, totalPages, itemsToScan[currentItemIndex], currentScan.totalItems))
+          l_old_page + 1, totalPages, itemsToScan[currentItemIndex], currentScan.totalItems))
+    
+    -- Réinitialiser le flag avant de continuer
+    isProcessingPage = false
     
     -- Scanner la page suivante si nécessaire pour l'item actuel
     if currentPage < totalPages then
@@ -185,6 +213,7 @@ function AHScanner:ProcessPage()
         if currentItemIndex <= #itemsToScan then
             -- Scanner le prochain item
             currentPage = 0
+            lastProcessedPage = -1
             Print("Scan de " .. itemsToScan[currentItemIndex] .. "...")
             C_Timer.After(AHScannerDB.settings.scanDelay, function()
                 QueryAuctionItems(itemsToScan[currentItemIndex], nil, nil, 0, 0, 0, 0)
