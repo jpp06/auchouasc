@@ -101,6 +101,10 @@ class AHScannerConverter(LuaToYamlConverter):
                 l_counted_data[c_item_name][c_type]["filtered"] = {}
                 l_counted_data[c_item_name][c_type]["all"] = {}
 
+                if len(l_prices) < 2:
+                    print("---", c_item_name, c_type, "not enough prices")
+                    continue
+
                 l_quartiles = statistics.quantiles(l_prices, n=4)
                 l_q1 = l_quartiles[0]
                 l_q3 = l_quartiles[2]
