@@ -24,7 +24,7 @@ class AHScannerObsidianGenerator:
         self.m_chart_avgs_template = self._load_template('chart_avgs.md')
         self.m_chart_mmmm_template = self._load_template('chart_mmmm.md')
         self.m_chart_pxxx_template = self._load_template('chart_pXxx.md')
-        self.m_chart_mustache_template = self._load_template('chart_mustache.md')
+        self.m_graph_mustache_template = self._load_template('graph_mustache.md')
         self.m_step_count = 1000
 
     def generate(self) -> int:
@@ -119,12 +119,12 @@ class AHScannerObsidianGenerator:
             l_mmmm_chart_content = self._generate_mmmm_chart_content(l_dates, l_mins, l_means, l_medians, l_maxs)
             l_devs_chart_content = self._generate_pxxx_chart_content(l_dates, l_p_stdevs, l_stdevs)
             l_variances_chart_content = self._generate_pxxx_chart_content(l_dates, l_p_variances, l_variances)
-            l_mustaches_chart_content = self._generate_mustaches_chart_content(l_dates, l_mustaches, l_mins, l_maxs)
+            l_mustaches_graph_content = self._generate_mustaches_graph_content(l_dates, l_mustaches, l_mins, l_maxs)
             l_markdown = f"\n## {c_realm}\n\n" + \
                 f"### Mustaches\n" + \
-                f"```chart\n" + \
-                f"{l_mustaches_chart_content}\n" + \
-                f"```\n" \
+                f"\n" + \
+                f"{l_mustaches_graph_content}\n" + \
+                f"\n" \
                 f"### Min-Mean-Median-Max\n" + \
                 f"```chart\n" + \
                 f"{l_mmmm_chart_content}\n" + \
@@ -155,61 +155,39 @@ class AHScannerObsidianGenerator:
             if not l_item_name:
                 continue
             l_markdown += f"## {l_item_name} ({c_item_id})\n\n"
-            l_min_bid_data = c_item_data['minBid']["counts_by_prices"]
-            l_buyout_data = c_item_data['buyout']["counts_by_prices"]
+            l_min_bid_data = c_item_data["minBid"]["counts_by_prices"]
+            l_buyout_data = c_item_data["buyout"]["counts_by_prices"]
             if l_min_bid_data:
                 l_markdown += "### Min Bid\n"
-                l_markdown += "```chart\n"
+                l_markdown += "\n"
                 l_markdown += self._generate_price_chart(l_min_bid_data)
-                l_markdown += "```\n\n"
+                l_markdown += "\n\n"
             if l_buyout_data:
                 l_markdown += "### Buyout\n"
-                l_markdown += "```chart\n"
+                l_markdown += "\n"
                 l_markdown += self._generate_price_chart(l_buyout_data)
-                l_markdown += "```\n\n"
+                l_markdown += "\n\n"
 
         return l_markdown
 
     def _generate_price_chart(self, p_price_data: Dict) -> str:
-        """Generate chart content for price vs item count."""
+        """
+        Generate chart content for price vs item count.
+        https://github.com/DylanHojnoski/obsidian-graphs
+        """
         l_prices = []
-        l_item_counts = []
-
-        for c_price_str, c_price_info in sorted(p_price_data.items(), key=lambda x: int(x[0])):
-            l_price = int(c_price_str)
+        l_cumulative_item_counts = []
+        l_cumul = 0
+        for c_price, c_price_info in sorted(p_price_data.items(), key=lambda x: int(x[0])):
             l_item_count = c_price_info.get('item_count', 0)
-            l_prices.append(l_price)
-            l_item_counts.append(l_item_count)
+            l_prices.append(c_price)
+            l_cumul += l_item_count
+            l_cumulative_item_counts.append(l_cumul)
 
         if not l_prices:
             return ""
         l_prices.sort()
-        l_prices_to_count = dict(zip(l_prices, l_item_counts))
-
-        l_max_x_chart = int(max(l_prices) * 1.04 + 1)
-        l_step = max(1, int(l_max_x_chart / self.m_step_count))
-        l_prices_by_step = range(0, l_max_x_chart, l_step)
-        l_cumulative_item_counts_by_step = []
-        l_cumulative_item_counts_by_step.append(0)
-        l_cumul = 0
-        for c_price in l_prices_by_step[1:]:
-            l_local_count = 0
-            if 0 == len(l_prices):
-                l_cumulative_item_counts_by_step.append("_")
-                continue
-            while 0 != len(l_prices):
-                if l_prices[0] < c_price:
-                    l_local_count += l_prices_to_count[l_prices[0]]
-                    l_prices = l_prices[1:]
-                else:
-                    if 0 != l_local_count:
-                        l_cumulative_item_counts_by_step[-1] = l_cumul
-                        l_cumulative_item_counts_by_step.append(l_cumulative_item_counts_by_step[-1] + l_local_count)
-                        l_cumul += l_local_count
-                    else:
-                        l_cumulative_item_counts_by_step.append("_")
-                    break
-        l_cumulative_item_counts_by_step[-1] = l_cumul
+        l_prices_to_count = dict(zip(l_prices, l_cumulative_item_counts))
 
         l_max_count = l_cumul
         if l_max_count < 10:
@@ -218,13 +196,23 @@ class AHScannerObsidianGenerator:
             l_max_count = (2 + int(l_max_count / 10)) * 10
         else:
             l_max_count = (2 + int(l_max_count / 100)) * 100
-        l_price_labels = ','.join(str(p) for p in l_prices_by_step)
-        l_item_counts_str = ','.join(str(c) for c in l_cumulative_item_counts_by_step)
+        l_elements = []
+        l_last_price = 0
+        l_last_cumulative_item_count = 0
+        for c_price, c_cumulative_item_count in l_prices_to_count.items():
+            l_elements.append(f"{{type: segment, def: [[{l_last_price}, {l_last_cumulative_item_count}], [{c_price}, {l_last_cumulative_item_count}]]}}")
+            l_elements.append(f"{{type: segment, def: [[{c_price}, {l_last_cumulative_item_count}], [{c_price}, {c_cumulative_item_count}]]}}")
+            l_last_price = c_price
+            l_last_cumulative_item_count = c_cumulative_item_count
 
+        l_xmax = l_prices[-1] * 1.05
+        l_ymax = l_max_count * 1.05
         return self.m_auction_chart_template.format(
-            labels=l_price_labels,
-            item_counts=l_item_counts_str,
-            max_count=l_max_count
+            elements=',\n  '.join(l_elements),
+            xmin=- l_xmax / 12,
+            ymin=- l_ymax / 5,
+            xmax=l_xmax,
+            ymax=l_ymax,
         )
 
     def _load_template(self, p_filename: str) -> str:
@@ -288,85 +276,40 @@ class AHScannerObsidianGenerator:
             vals=l_vals_str,
         )
 
-    def _generate_mustaches_chart_content(self, p_dates, p_mustaches, p_mins, p_maxs):
-        """Generate chart content from dates and mustaches, mins and maxs."""
-
-        l_start_count = 4
-        l_step_count = 50
-        l_steps = ["_"] * l_step_count
-        l_labels = ["_"] * l_start_count
-        for c_date in p_dates[:-1]:
-            l_labels.append(c_date)
-            l_labels += l_steps.copy()
-        l_labels.append(p_dates[-1])
-        l_labels += ["_"] * l_start_count
-        l_labels_str = '","'.join(l_labels)
-
-        l_mins = ["_"] * (l_step_count * len(p_dates) + 2 * l_start_count)
+    def _generate_mustaches_graph_content(self, p_dates, p_mustaches, p_mins, p_maxs):
+        """Generate graph content from dates and mustaches, mins and maxs."""
+        l_elements = []
+        l_x_min_ts = datetime.strptime(p_dates[0], '%Y-%m-%d %H:%M').timestamp() * 0.99999
+        l_x_max_ts = datetime.strptime(p_dates[-1], '%Y-%m-%d %H:%M').timestamp() * 1.00001
         for c_index, c_date in enumerate(p_dates):
-            l_mins[l_start_count + c_index * l_step_count - 3] = p_mins[c_index]
-            l_mins[l_start_count + c_index * l_step_count - 2] = p_mins[c_index]
-            l_mins[l_start_count + c_index * l_step_count - 1] = p_mins[c_index]
-            l_mins[l_start_count + c_index * l_step_count] = p_mins[c_index]
-            l_mins[l_start_count + c_index * l_step_count + 1] = p_mins[c_index]
-            l_mins[l_start_count + c_index * l_step_count + 2] = p_mins[c_index]
-            l_mins[l_start_count + c_index * l_step_count + 3] = p_mins[c_index]
-        l_mins_str = ','.join([str(_) for _ in l_mins])
-
-        l_maxs = ["_"] * (l_step_count * len(p_dates) + 2 * l_start_count)
-        for c_index, c_date in enumerate(p_dates):
-            l_maxs[l_start_count + c_index * l_step_count - 3] = p_maxs[c_index]
-            l_maxs[l_start_count + c_index * l_step_count - 2] = p_maxs[c_index]
-            l_maxs[l_start_count + c_index * l_step_count - 1] = p_maxs[c_index]
-            l_maxs[l_start_count + c_index * l_step_count] = p_maxs[c_index]
-            l_maxs[l_start_count + c_index * l_step_count + 1] = p_maxs[c_index]
-            l_maxs[l_start_count + c_index * l_step_count + 2] = p_maxs[c_index]
-            l_maxs[l_start_count + c_index * l_step_count + 3] = p_maxs[c_index]
-        l_maxs_str = ','.join([str(_) for _ in l_maxs])
-
-        l_q1s = ["_"] * (l_step_count * len(p_dates) + 2 * l_start_count)
-        for c_index, c_date in enumerate(p_dates):
-            l_q1s[l_start_count + c_index * l_step_count - 3] = p_mustaches[c_index][0]
-            l_q1s[l_start_count + c_index * l_step_count - 2] = p_mustaches[c_index][0]
-            l_q1s[l_start_count + c_index * l_step_count - 1] = p_mustaches[c_index][0]
-            l_q1s[l_start_count + c_index * l_step_count] = p_mustaches[c_index][0]
-            l_q1s[l_start_count + c_index * l_step_count + 1] = p_mustaches[c_index][0]
-        l_q1s_str = ','.join([str(_) for _ in l_q1s])
-
-        l_q2s = ["_"] * (l_step_count * len(p_dates) + 2 * l_start_count)
-        for c_index, c_date in enumerate(p_dates):
-            l_q2s[l_start_count + c_index * l_step_count - 2] = p_mustaches[c_index][1]
-            l_q2s[l_start_count + c_index * l_step_count - 1] = p_mustaches[c_index][1]
-            l_q2s[l_start_count + c_index * l_step_count] = p_mustaches[c_index][1]
-            l_q2s[l_start_count + c_index * l_step_count + 1] = p_mustaches[c_index][1]
-            l_q2s[l_start_count + c_index * l_step_count + 2] = p_mustaches[c_index][1]
-        l_q2s_str = ','.join([str(_) for _ in l_q2s])
-
-        l_q3s = ["_"] * (l_step_count * len(p_dates) + 2 * l_start_count)
-        for c_index, c_date in enumerate(p_dates):
-            l_q3s[l_start_count + c_index * l_step_count - 1] = p_mustaches[c_index][2]
-            l_q3s[l_start_count + c_index * l_step_count] = p_mustaches[c_index][2]
-            l_q3s[l_start_count + c_index * l_step_count + 1] = p_mustaches[c_index][2]
-            l_q3s[l_start_count + c_index * l_step_count + 2] = p_mustaches[c_index][2]
-            l_q3s[l_start_count + c_index * l_step_count + 3] = p_mustaches[c_index][2]
-        l_q3s_str = ','.join([str(_) for _ in l_q3s])
-
-        l_verts = ["_"] * (l_step_count * len(p_dates) + 2 * l_start_count)
-        for c_index, c_date in enumerate(p_dates):
-            l_verts[l_start_count + c_index * l_step_count - 3] = p_mustaches[c_index][0]
-            l_verts[l_start_count + c_index * l_step_count - 2] = p_mustaches[c_index][1]
-            l_verts[l_start_count + c_index * l_step_count - 1] = p_mustaches[c_index][2]
-            l_verts[l_start_count + c_index * l_step_count + 1] = p_mustaches[c_index][0]
-            l_verts[l_start_count + c_index * l_step_count + 2] = p_mustaches[c_index][1]
-            l_verts[l_start_count + c_index * l_step_count + 3] = p_mustaches[c_index][2]
-        l_verts_str = ','.join([str(_) for _ in l_verts])
-
-        return self.m_chart_mustache_template.format(
-            labels=l_labels_str,
-            mins=l_mins_str,
-            maxs=l_maxs_str,
-            q1s=l_q1s_str,
-            q2s=l_q2s_str,
-            q3s=l_q3s_str,
-            verts=l_verts_str,
+            l_x = datetime.strptime(c_date, '%Y-%m-%d %H:%M').timestamp() - l_x_min_ts
+            l_elements += self._draw_one_mustache(l_x, 10000, p_mustaches[c_index], p_mins[c_index], p_maxs[c_index])
+        l_elements_str = ','.join(l_elements)
+        l_xmax = (l_x_max_ts - l_x_min_ts)
+        l_ymax = max(p_mins + p_maxs) * 1.05
+        return self.m_graph_mustache_template.format(
+            elements=l_elements_str,
+            xmin=- l_xmax / 12,
+            ymin=- l_ymax / 5,
+            xmax=l_xmax,
+            ymax=l_ymax,
         )
+
+    def _draw_one_mustache(self, p_x, p_delta, p_mustache, p_min, p_max):
+        """
+        Draw one mustache.
+        https://github.com/DylanHojnoski/obsidian-graphs
+        """
+        l_elements = []
+        l_left = p_x - p_delta / 2
+        l_right = p_x + p_delta / 2
+        l_elements.append(f"{{type: segment, def: [[{l_left}, {p_min}], [{l_right}, {p_min}]]}}")                  # bottom line
+        l_elements.append(f"{{type: segment, def: [[{l_left}, {p_max}], [{l_right}, {p_max}]]}}")                  # top line
+        l_elements.append(f"{{type: segment, def: [[{l_left}, {p_mustache[0]}], [{l_right}, {p_mustache[0]}]]}}")  # q1 line
+        l_elements.append(f"{{type: segment, def: [[{l_left}, {p_mustache[1]}], [{l_right}, {p_mustache[1]}]]}}")  # q2 line
+        l_elements.append(f"{{type: segment, def: [[{l_left}, {p_mustache[2]}], [{l_right}, {p_mustache[2]}]]}}")  # q3 line
+        l_elements.append(f"{{type: segment, def: [[{l_left}, {p_mustache[0]}], [{l_left}, {p_mustache[2]}]]}}")   # q1-q3 left vertical line
+        l_elements.append(f"{{type: segment, def: [[{l_right}, {p_mustache[0]}], [{l_right}, {p_mustache[2]}]]}}") # q1-q3 right vertical line
+        l_elements.append(f"{{type: segment, def: [[{p_x}, {p_min}], [{p_x}, {p_mustache[0]}]]}}")                 # bottom vertical line
+        l_elements.append(f"{{type: segment, def: [[{p_x}, {p_max}], [{p_x}, {p_mustache[2]}]]}}")                 # top vertical line
+        return l_elements
