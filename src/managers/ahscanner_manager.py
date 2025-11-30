@@ -53,22 +53,30 @@ class AHScannerManager(BaseManager):
                         "all": {},
                         "filtered": {}
                     }
-                    l_buyout = int(c_item_data["buyout"]["all"]["mean"])
-                    l_min_bid = int(c_item_data["minBid"]["all"]["mean"])
-                    l_count = c_item_data["buyout"]["all"]["count"]
 
-                    l_result[c_realm][l_timestamp][l_item_id]["all"] = {
-                        "q": l_count,
-                        "p": l_buyout,
-                        "m": l_min_bid
-                    }
-                    l_buyout = int(c_item_data["buyout"]["filtered"]["mean"])
-                    l_min_bid = int(c_item_data["minBid"]["filtered"]["mean"])
-                    l_count = c_item_data["buyout"]["filtered"]["count"]
+                    if "all" in c_item_data["buyout"] \
+                          and "mean" in c_item_data["buyout"]["all"] \
+                          and "all" in c_item_data["minBid"] \
+                          and "mean" in c_item_data["minBid"]["all"]:
+                       l_buyout = int(c_item_data["buyout"]["all"]["mean"])
+                       l_min_bid = int(c_item_data["minBid"]["all"]["mean"])
+                       l_count = c_item_data["buyout"]["all"]["count"]
+                       l_result[c_realm][l_timestamp][l_item_id]["all"] = {
+                           "q": l_count,
+                           "p": l_buyout,
+                           "m": l_min_bid
+                       }
 
-                    l_result[c_realm][l_timestamp][l_item_id]["filtered"] = {
-                        "q": l_count,
-                        "p": l_buyout,
-                        "m": l_min_bid
-                    }
+                    if "all" in c_item_data["buyout"] \
+                          and "mean" in c_item_data["buyout"]["filtered"] \
+                          and "filtered" in c_item_data["minBid"] \
+                          and "mean" in c_item_data["minBid"]["filtered"]:
+                        l_buyout = int(c_item_data["buyout"]["filtered"]["mean"])
+                        l_min_bid = int(c_item_data["minBid"]["filtered"]["mean"])
+                        l_count = c_item_data["buyout"]["filtered"]["count"]
+                        l_result[c_realm][l_timestamp][l_item_id]["filtered"] = {
+                            "q": l_count,
+                            "p": l_buyout,
+                            "m": l_min_bid
+                        }
         return l_result

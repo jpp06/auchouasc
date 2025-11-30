@@ -88,18 +88,18 @@ class AHScannerObsidianGenerator:
                 if not l_item:
                     continue
                 l_buyout_filtered = l_item['buyout']['filtered']
-                l_harmonic_mean = l_buyout_filtered['harmonic_mean']
-                l_median = l_buyout_filtered['median']
-                l_median_groupe = l_buyout_filtered['median_grouped']
-                l_median_low = l_buyout_filtered['median_low']
-                l_mean = l_buyout_filtered['mean']
-                l_min = l_buyout_filtered['min']
-                l_max = l_buyout_filtered['max']
-                l_p_stdev = l_buyout_filtered['pstdev']
-                l_stdev = l_buyout_filtered['stdev']
-                l_p_variance = l_buyout_filtered['pvariance']
-                l_variance = l_buyout_filtered['variance']
-                l_mustache = l_buyout_filtered['quartiles']
+                l_harmonic_mean = l_buyout_filtered.get('harmonic_mean', 0)
+                l_median = l_buyout_filtered.get('median', 0)
+                l_median_groupe = l_buyout_filtered.get('median_grouped', 0)
+                l_median_low = l_buyout_filtered.get('median_low', 0)
+                l_mean = l_buyout_filtered.get('mean', 0)
+                l_min = l_buyout_filtered.get('min', 0)
+                l_max = l_buyout_filtered.get('max', 0)
+                l_p_stdev = l_buyout_filtered.get('pstdev', 0)
+                l_stdev = l_buyout_filtered.get('stdev', 0)
+                l_p_variance = l_buyout_filtered.get('pvariance', 0)
+                l_variance = l_buyout_filtered.get('variance', 0)
+                l_mustache = l_buyout_filtered.get('quartiles', [])
                 l_dates.append(l_date_str)
                 l_harmonic_means.append(l_harmonic_mean)
                 l_medians.append(l_median)
@@ -155,14 +155,14 @@ class AHScannerObsidianGenerator:
             if not l_item_name:
                 continue
             l_markdown += f"## {l_item_name} ({c_item_id})\n\n"
-            l_min_bid_data = c_item_data["minBid"]["counts_by_prices"]
-            l_buyout_data = c_item_data["buyout"]["counts_by_prices"]
-            if l_min_bid_data:
+            if "counts_by_prices" in c_item_data["minBid"]:
+                l_min_bid_data = c_item_data["minBid"]["counts_by_prices"]
                 l_markdown += "### Min Bid\n"
                 l_markdown += "\n"
                 l_markdown += self._generate_price_chart(l_min_bid_data)
                 l_markdown += "\n\n"
-            if l_buyout_data:
+            if "counts_by_prices" in c_item_data["buyout"]:
+                l_buyout_data = c_item_data["buyout"]["counts_by_prices"]
                 l_markdown += "### Buyout\n"
                 l_markdown += "\n"
                 l_markdown += self._generate_price_chart(l_buyout_data)
@@ -301,6 +301,8 @@ class AHScannerObsidianGenerator:
         https://github.com/DylanHojnoski/obsidian-graphs
         """
         l_elements = []
+        if not p_mustache:
+            return l_elements
         l_left = p_x - p_delta / 2
         l_right = p_x + p_delta / 2
         l_elements.append(f"{{type: segment, def: [[{l_left}, {p_min}], [{l_right}, {p_min}]]}}")                  # bottom line
